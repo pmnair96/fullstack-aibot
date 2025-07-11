@@ -1,12 +1,22 @@
-# Genie AI Assistant
+# Geni- 🎯 Clean, modern ChatGPT-inspired UI
+- 💬 Real-time chat interface with typing indicators
+- 📁 File upload support (Images, PDF, Excel, Word documents)
+- 🤖 Azure OpenAI integration for intelligent responses
+- 📱 Responsive design for mobile and desktop
+- ⚡ Fast loading with Angular standalone components
+- 🎨 Beautiful animations and transitions
+- 🔒 Secure backend with rate limiting and validation
+- 📊 Health monitoring and loggingsistant
 
-A ChatGPT-like UI built with Angular that provides an interactive chat interface for AI conversations.
+A full-stack ChatGPT-like application built with Angular frontend and Node.js backend that provides an interactive chat interface for AI conversations with Azure OpenAI integration.
 
 ## Features
 
 - 🎯 Clean, modern ChatGPT-inspired UI
 - 💬 Real-time chat interface with typing indicators
-- 📱 Responsive design for mobile and desktop
+- � File upload support for images, PDF, Excel, and Word documents
+- 🖼️ Image preview functionality
+- �📱 Responsive design for mobile and desktop
 - ⚡ Fast loading with Angular standalone components
 - 🎨 Beautiful animations and transitions
 
@@ -38,8 +48,40 @@ frontend/
 
 - Node.js (v18 or higher)
 - npm or yarn
+- Azure OpenAI service account (optional for development)
 
-### Installation
+### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit the `.env` file with your Azure OpenAI credentials:
+   ```env
+   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+   AZURE_OPENAI_API_KEY=your-api-key
+   AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+   ```
+
+4. Start the backend server:
+   ```bash
+   npm start
+   ```
+   
+   The backend will run on `http://localhost:3000`
+
+### Frontend Setup
 
 1. Navigate to the frontend directory:
    ```bash
@@ -58,22 +100,55 @@ frontend/
 
 4. Open your browser and navigate to `http://localhost:4200`
 
+### Development Mode
+
+The application works in development mode without Azure OpenAI credentials. The backend will use mock responses for testing the chat functionality and file uploads.
+
+## API Endpoints
+
+### Backend API (http://localhost:3000)
+
+- `GET /api/health` - Health check endpoint
+- `POST /api/chat/message` - Send chat message (supports file uploads)
+- `GET /api/chat/history/:sessionId` - Get conversation history
+- `DELETE /api/chat/file/:filename` - Delete uploaded file
+
+### File Upload Support
+
+The application supports uploading the following file types:
+- **Images**: JPEG, PNG, GIF, WebP
+- **Documents**: PDF, Word (.doc, .docx)
+- **Spreadsheets**: Excel (.xls, .xlsx, .xlsm)
+
+Maximum file size: 10MB per file
+Maximum files per message: 5 files
+
 ## Available Scripts
 
+### Frontend Scripts
 - `npm start` - Start development server
 - `npm run build` - Build for production
 - `npm test` - Run unit tests
 - `npm run watch` - Build in watch mode
 
+### Backend Scripts
+- `npm start` - Start production server
+- `npm run dev` - Start development server with auto-reload
+- `npm test` - Run tests
+
 ## Chat Interface Features
 
 - **Message History**: All conversations are stored in the session
 - **Typing Indicators**: Shows when the AI is "thinking"
+- **File Upload**: Support for images, PDFs, Excel files, and Word documents
+- **File Preview**: Image thumbnails and file information display
 - **Responsive Design**: Works on all screen sizes
 - **Keyboard Shortcuts**: 
   - `Enter` to send message
   - `Shift + Enter` for new line
-- **Mock AI Responses**: Currently uses simulated responses (ready for backend integration)
+- **Azure AI Integration**: Real-time responses from Azure OpenAI
+- **Session Management**: Conversation context maintained across messages
+- **Error Handling**: Graceful fallback and error messages
 
 ## Future Enhancements
 
@@ -87,9 +162,15 @@ frontend/
 ## Technology Stack
 
 - **Frontend**: Angular 20+ with standalone components
+- **Backend**: Node.js with Express.js
+- **AI Integration**: Azure OpenAI API
+- **File Upload**: Multer middleware
 - **Styling**: Pure CSS with modern design patterns
 - **State Management**: Angular services with RxJS
-- **Build Tool**: Angular CLI with esbuild
+- **Build Tools**: Angular CLI with esbuild
+- **Security**: Helmet.js, CORS, rate limiting
+- **Logging**: Winston with file logging
+- **Validation**: Joi schema validation
 
 ## Contributing
 

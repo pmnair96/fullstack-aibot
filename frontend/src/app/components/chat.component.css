@@ -154,22 +154,34 @@
 
 .chat-input {
   display: flex;
-  gap: 12px;
   align-items: flex-end;
+  gap: 8px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 25px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease;
+}
+
+.chat-input:focus-within {
+  border-color: #667eea;
 }
 
 .chat-input textarea {
   flex: 1;
-  border: 2px solid #e9ecef;
-  border-radius: 20px;
-  padding: 12px 16px;
-  font-size: 14px;
-  font-family: inherit;
-  resize: none;
+  border: none;
   outline: none;
-  transition: border-color 0.2s ease;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 4px 0;
   max-height: 120px;
-  min-height: 20px;
+  overflow-y: auto;
+}
+
+.chat-input textarea::placeholder {
+  color: #9ca3af;
 }
 
 .chat-input textarea:focus {
@@ -266,6 +278,201 @@
   font-style: italic;
 }
 
+/* File upload and attachment styles */
+.file-preview-container {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.file-preview-header {
+  background: #e9ecef;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.clear-files-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.clear-files-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.file-preview-list {
+  padding: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.file-preview-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+}
+
+.file-preview-item:last-child {
+  margin-bottom: 0;
+}
+
+.file-preview-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+}
+
+.file-icon {
+  font-size: 16px;
+  margin-right: 8px;
+  min-width: 20px;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size {
+  font-size: 10px;
+  color: #6c757d;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.remove-file-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.file-upload-btn {
+  background: #667eea;
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.file-upload-btn:hover:not(:disabled) {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+.file-upload-btn:disabled {
+  background: #c6c6c6;
+  cursor: not-allowed;
+}
+
+/* Message attachments display */
+.message-attachments {
+  margin-bottom: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  background: rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 6px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:last-child {
+  margin-bottom: 0;
+}
+
+.attachment-item:hover {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.3);
+}
+
+.attachment-icon {
+  font-size: 16px;
+  margin-right: 8px;
+  min-width: 20px;
+}
+
+.attachment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-size {
+  font-size: 10px;
+  color: #6c757d;
+}
+
+.attachment-preview {
+  max-width: 60px;
+  max-height: 60px;
+  border-radius: 4px;
+  margin-left: 8px;
+  object-fit: cover;
+  border: 1px solid #dee2e6;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .chat-container {
@@ -280,5 +487,26 @@
   
   .chat-input-container {
     padding: 15px;
+  }
+  
+  /* Responsive adjustments for file upload */
+  .file-preview-container {
+    margin-bottom: 8px;
+  }
+  
+  .file-preview-list {
+    max-height: 100px;
+  }
+  
+  .attachment-preview {
+    max-width: 40px;
+    max-height: 40px;
+  }
+  
+  .file-upload-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 14px;
+    padding: 6px 8px;
   }
 }

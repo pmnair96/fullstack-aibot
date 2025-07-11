@@ -1,7 +1,7 @@
 import { Component, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChatService, ChatMessage } from '../services/chat.service';
+import { ChatService, ChatMessage, FileAttachment } from '../services/chat.service';
 
 @Component({
   selector: 'app-chat',
@@ -11,7 +11,7 @@ import { ChatService, ChatMessage } from '../services/chat.service';
     <div class="chat-container">
       <div class="chat-header">
         <h1>Genie AI Assistant</h1>
-        <p>Ask me anything!</p>
+        <p>Ask me anything! You can also upload images, Excel, PDF, and Word files.</p>
       </div>
       
       <div class="chat-messages" #messagesContainer>
@@ -23,6 +23,27 @@ import { ChatService, ChatMessage } from '../services/chat.service';
             <span *ngIf="!message.isUser">🤖</span>
           </div>
           <div class="message-content">
+            <!-- File attachments -->
+            <div *ngIf="message.attachments && message.attachments.length > 0" class="message-attachments">
+              <div *ngFor="let attachment of message.attachments" class="attachment-item">
+                <div class="attachment-icon">
+                  <span *ngIf="attachment.type.startsWith('image/')">🖼️</span>
+                  <span *ngIf="attachment.type.includes('excel') || attachment.type.includes('spreadsheet')">📊</span>
+                  <span *ngIf="attachment.type.includes('pdf')">📄</span>
+                  <span *ngIf="attachment.type.includes('word') || attachment.type.includes('document')">📝</span>
+                  <span *ngIf="!attachment.type.startsWith('image/') && !attachment.type.includes('excel') && !attachment.type.includes('spreadsheet') && !attachment.type.includes('pdf') && !attachment.type.includes('word') && !attachment.type.includes('document')">📎</span>
+                </div>
+                <div class="attachment-info">
+                  <div class="attachment-name">{{ attachment.name }}</div>
+                  <div class="attachment-size">{{ formatFileSize(attachment.size) }}</div>
+                </div>
+                <img *ngIf="attachment.type.startsWith('image/') && attachment.data" 
+                     [src]="attachment.data" 
+                     class="attachment-preview" 
+                     [alt]="attachment.name">
+              </div>
+            </div>
+            
             <div class="message-text" [innerHTML]="formatMessage(message.content)"></div>
             <div class="message-time">{{ formatTime(message.timestamp) }}</div>
           </div>
@@ -37,7 +58,47 @@ import { ChatService, ChatMessage } from '../services/chat.service';
       </div>
       
       <div class="chat-input-container">
+        <!-- File upload preview -->
+        <div *ngIf="selectedFiles.length > 0" class="file-preview-container">
+          <div class="file-preview-header">
+            <span>{{ selectedFiles.length }} file(s) selected</span>
+            <button (click)="clearFiles()" class="clear-files-btn">✕</button>
+          </div>
+          <div class="file-preview-list">
+            <div *ngFor="let file of selectedFiles; trackBy: trackByFileId" class="file-preview-item">
+              <div class="file-icon">
+                <span *ngIf="file.type.startsWith('image/')">🖼️</span>
+                <span *ngIf="file.type.includes('excel') || file.type.includes('spreadsheet')">📊</span>
+                <span *ngIf="file.type.includes('pdf')">📄</span>
+                <span *ngIf="file.type.includes('word') || file.type.includes('document')">📝</span>
+                <span *ngIf="!file.type.startsWith('image/') && !file.type.includes('excel') && !file.type.includes('spreadsheet') && !file.type.includes('pdf') && !file.type.includes('word') && !file.type.includes('document')">📎</span>
+              </div>
+              <div class="file-info">
+                <div class="file-name">{{ file.name }}</div>
+                <div class="file-size">{{ formatFileSize(file.size) }}</div>
+              </div>
+              <button (click)="removeFile(file.id)" class="remove-file-btn">✕</button>
+            </div>
+          </div>
+        </div>
+
         <div class="chat-input">
+          <div class="input-actions">
+            <input 
+              type="file" 
+              #fileInput 
+              (change)="onFileSelected($event)"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.xlsm"
+              style="display: none;">
+            <button 
+              (click)="fileInput.click()" 
+              class="file-upload-btn"
+              [disabled]="isLoading"
+              title="Upload files (Images, PDF, Excel, Word)">
+              📎
+            </button>
+          </div>
           <textarea 
             [(ngModel)]="currentMessage" 
             (keydown)="onKeyDown($event)"
@@ -47,7 +108,7 @@ import { ChatService, ChatMessage } from '../services/chat.service';
             #messageInput></textarea>
           <button 
             (click)="sendMessage()" 
-            [disabled]="!currentMessage.trim() || isLoading"
+            [disabled]="(!currentMessage.trim() && selectedFiles.length === 0) || isLoading"
             class="send-button">
             <span *ngIf="!isLoading">Send</span>
             <span *ngIf="isLoading" class="spinner"></span>
@@ -69,7 +130,7 @@ export class ChatComponent implements AfterViewChecked {
   messages: ChatMessage[] = [
     {
       id: '1',
-      content: 'Hello! I\'m your Genie AI assistant. How can I help you today?',
+      content: 'Hello! I\'m your Genie AI assistant. How can I help you today? You can also upload files like images, PDFs, Excel sheets, and Word documents.',
       isUser: false,
       timestamp: new Date()
     }
@@ -77,6 +138,22 @@ export class ChatComponent implements AfterViewChecked {
   
   currentMessage = '';
   isLoading = false;
+  selectedFiles: FileAttachment[] = [];
+  
+  // Supported file types
+  readonly supportedTypes = {
+    'image/jpeg': true,
+    'image/jpg': true,
+    'image/png': true,
+    'image/gif': true,
+    'image/webp': true,
+    'application/pdf': true,
+    'application/msword': true,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+    'application/vnd.ms-excel': true,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': true,
+    'application/vnd.ms-excel.sheet.macroEnabled.12': true
+  };
 
   constructor(private chatService: ChatService) {}
 
@@ -92,18 +169,25 @@ export class ChatComponent implements AfterViewChecked {
   }
 
   sendMessage() {
-    if (!this.currentMessage.trim() || this.isLoading) return;
+    if ((!this.currentMessage.trim() && this.selectedFiles.length === 0) || this.isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      content: this.currentMessage,
+      content: this.currentMessage || (this.selectedFiles.length > 0 ? 'Shared files' : ''),
       isUser: true,
-      timestamp: new Date()
+      timestamp: new Date(),
+      attachments: this.selectedFiles.length > 0 ? [...this.selectedFiles] : undefined
     };
 
     this.messages.push(userMessage);
-    const messageText = this.currentMessage;
+    const messageText = this.currentMessage || 'Please analyze the uploaded files';
+    const attachments = this.selectedFiles.length > 0 ? [...this.selectedFiles] : undefined;
+    
+    // Convert FileAttachment objects to actual File objects for upload
+    const filesToUpload: File[] = [];
+    
     this.currentMessage = '';
+    this.selectedFiles = [];
     this.isLoading = true;
 
     // Add loading message
@@ -116,17 +200,28 @@ export class ChatComponent implements AfterViewChecked {
     };
     this.messages.push(loadingMessage);
 
-    this.chatService.sendMessage(messageText).subscribe({
+    // Choose the appropriate service method
+    const serviceCall = filesToUpload.length > 0 
+      ? this.chatService.sendMessageWithFiles(messageText, filesToUpload, attachments)
+      : this.chatService.sendMessage(messageText, attachments);
+
+    serviceCall.subscribe({
       next: (response) => {
         // Remove loading message
         this.messages = this.messages.filter(m => !m.isLoading);
+        
+        // Update session ID if provided
+        if (response.sessionId) {
+          this.chatService.setSessionId(response.sessionId);
+        }
         
         // Add AI response
         const aiMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
           content: response.response,
           isUser: false,
-          timestamp: new Date()
+          timestamp: new Date(),
+          attachments: response.attachments
         };
         this.messages.push(aiMessage);
         this.isLoading = false;
@@ -147,6 +242,68 @@ export class ChatComponent implements AfterViewChecked {
         this.isLoading = false;
       }
     });
+  }
+
+  onFileSelected(event: any) {
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Check file type
+      if (!this.supportedTypes[file.type as keyof typeof this.supportedTypes]) {
+        alert(`File type ${file.type} is not supported. Please upload images, PDF, Excel, or Word files.`);
+        continue;
+      }
+
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Please upload files smaller than 10MB.`);
+        continue;
+      }
+
+      const fileAttachment: FileAttachment = {
+        id: Date.now().toString() + i,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      };
+
+      // For images, create a preview
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          fileAttachment.data = e.target?.result as string;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      this.selectedFiles.push(fileAttachment);
+    }
+
+    // Clear the input
+    event.target.value = '';
+  }
+
+  removeFile(fileId: string) {
+    this.selectedFiles = this.selectedFiles.filter(f => f.id !== fileId);
+  }
+
+  clearFiles() {
+    this.selectedFiles = [];
+  }
+
+  trackByFileId(index: number, file: FileAttachment): string {
+    return file.id;
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   formatMessage(content: string): string {

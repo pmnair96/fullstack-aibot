@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { catchError } from 'rxjs/operators';
 
 export interface ChatMessage {
   id: string;
@@ -7,41 +9,105 @@ export interface ChatMessage {
   isUser: boolean;
   timestamp: Date;
   isLoading?: boolean;
+  attachments?: FileAttachment[];
+}
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  data?: string; // base64 encoded data for preview
 }
 
 export interface ChatRequest {
   message: string;
+  attachments?: FileAttachment[];
+  sessionId?: string;
 }
 
 export interface ChatResponse {
+  success: boolean;
   response: string;
+  sessionId?: string;
+  attachments?: FileAttachment[];
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ChatService {
-  private mockResponses = [
-    "I'm a mock AI assistant. I understand you asked: '{message}'. How can I help you further?",
-    "That's an interesting question about '{message}'. Let me think about that...",
-    "Based on your message '{message}', I can provide some insights. What specific aspect would you like to explore?",
-    "I see you mentioned '{message}'. Here's what I think about that topic...",
-    "Thank you for sharing '{message}' with me. I'd be happy to discuss this further.",
-    "Your question about '{message}' is quite thoughtful. Let me provide a detailed response...",
-    "I notice you're asking about '{message}'. This is definitely something worth exploring in depth.",
-    "Great question regarding '{message}'! I have several thoughts on this matter."
-  ];
+  private readonly API_URL = 'http://localhost:3000/api';
+  private sessionId: string | null = null;
 
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
-  sendMessage(message: string): Observable<ChatResponse> {
-    // Simulate network delay
-    const randomDelay = Math.random() * 2000 + 1000; // 1-3 seconds
+  sendMessage(message: string, attachments?: FileAttachment[]): Observable<ChatResponse> {
+    const formData = new FormData();
+    formData.append('message', message);
     
-    // Get a random response and replace the placeholder with the actual message
-    const randomResponse = this.mockResponses[Math.floor(Math.random() * this.mockResponses.length)];
-    const response = randomResponse.replace('{message}', message);
+    if (this.sessionId) {
+      formData.append('sessionId', this.sessionId);
+    }
+
+    // Add file attachments if any
+    if (attachments && attachments.length > 0) {
+      formData.append('attachments', JSON.stringify(attachments));
+    }
+
+    return this.http.post<ChatResponse>(`${this.API_URL}/chat/message`, formData)
+      .pipe(
+        catchError(error => {
+          console.error('Chat service error:', error);
+          return throwError(() => new Error('Failed to send message. Please try again.'));
+        })
+      );
+  }
+
+  // Method to send message with file uploads
+  sendMessageWithFiles(message: string, files: File[], attachments?: FileAttachment[]): Observable<ChatResponse> {
+    const formData = new FormData();
+    formData.append('message', message || 'Please analyze the uploaded files');
     
-    return of({ response }).pipe(delay(randomDelay));
+    if (this.sessionId) {
+      formData.append('sessionId', this.sessionId);
+    }
+
+    // Add client-side attachments (for display purposes)
+    if (attachments && attachments.length > 0) {
+      formData.append('attachments', JSON.stringify(attachments));
+    }
+
+    // Add actual files for upload
+    files.forEach((file, index) => {
+      formData.append('files', file);
+    });
+
+    return this.http.post<ChatResponse>(`${this.API_URL}/chat/message`, formData)
+      .pipe(
+        catchError(error => {
+          console.error('Chat service error:', error);
+          return throwError(() => new Error('Failed to send message with files. Please try again.'));
+        })
+      );
+  }
+
+  setSessionId(sessionId: string) {
+    this.sessionId = sessionId;
+  }
+
+  getSessionId(): string | null {
+    return this.sessionId;
+  }
+
+  // Health check method
+  checkHealth(): Observable<any> {
+    return this.http.get(`${this.API_URL}/health`);
   }
 }
