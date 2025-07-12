@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://fullstack-aibot-backend.onrender.com'  // Render backend URL
+  apiUrl: '/api'  // Vercel serverless functions URL
 };
