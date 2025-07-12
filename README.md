@@ -218,7 +218,32 @@ cp .env.production .env
 - 🔧 Backend API: http://localhost:8000
 - 📚 API Docs: http://localhost:8000/docs
 
-### Option 2: Cloud Platforms
+### Option 2: GitHub Pages + Railway (Free!)
+
+**🌟 Completely Free Deployment:**
+```bash
+# 1. Deploy backend to Railway
+./deploy-backend-railway.sh
+
+# 2. Update frontend API URL with your Railway URL
+# Edit frontend/src/environments/environment.prod.ts
+
+# 3. Enable GitHub Pages in repository settings
+
+# 4. Push to trigger deployment
+git add .
+git commit -m "Configure GitHub Pages deployment"
+git push origin main
+```
+
+**Live URLs:**
+- 🌐 Frontend: https://pmnair96.github.io/fullstack-aibot
+- 🔧 Backend: https://your-app.railway.app
+- 📚 Docs: https://your-app.railway.app/docs
+
+📖 **See [GITHUB-PAGES.md](GITHUB-PAGES.md) for detailed GitHub Pages setup**
+
+### Option 3: Cloud Platforms
 
 **Quick Deploy Options:**
 - 🟦 **Vercel + Railway**: Frontend on Vercel, Backend on Railway
