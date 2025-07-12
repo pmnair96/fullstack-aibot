@@ -1,14 +1,14 @@
 # Geni- 🎯 Clean, modern ChatGPT-inspired UI
 - 💬 Real-time chat interface with typing indicators
 - 📁 File upload support (Images, PDF, Excel, Word documents)
-- 🤖 Azure OpenAI integration for intelligent responses
+- 🤖 OpenRouter integration for intelligent responses with multiple LLM options
 - 📱 Responsive design for mobile and desktop
 - ⚡ Fast loading with Angular standalone components
 - 🎨 Beautiful animations and transitions
 - 🔒 Secure backend with rate limiting and validation
 - 📊 Health monitoring and loggingsistant
 
-A full-stack ChatGPT-like application built with Angular frontend and Node.js backend that provides an interactive chat interface for AI conversations with Azure OpenAI integration.
+A full-stack ChatGPT-like application built with Angular frontend and Node.js backend that provides an interactive chat interface for AI conversations with OpenRouter integration.
 
 ## Features
 
@@ -23,7 +23,7 @@ A full-stack ChatGPT-like application built with Angular frontend and Node.js ba
 ## Project Structure
 
 ```
-frontend/
+frontend/  
 ├── src/
 │   ├── app/
 │   │   ├── components/
@@ -48,7 +48,7 @@ frontend/
 
 - Node.js (v18 or higher)
 - npm or yarn
-- Azure OpenAI service account (optional for development)
+- OpenRouter API account (optional for development)
 
 ### Backend Setup
 
@@ -67,11 +67,12 @@ frontend/
    cp .env.example .env
    ```
    
-   Edit the `.env` file with your Azure OpenAI credentials:
+   Edit the `.env` file with your OpenRouter credentials:
    ```env
-   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+   OPENROUTER_API_KEY=your-openrouter-api-key
+   OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
+   OPENROUTER_SITE_URL=https://your-site.com
+   OPENROUTER_APP_NAME=Genie-AI-Assistant
    ```
 
 4. Start the backend server:
@@ -102,7 +103,7 @@ frontend/
 
 ### Development Mode
 
-The application works in development mode without Azure OpenAI credentials. The backend will use mock responses for testing the chat functionality and file uploads.
+The application works in development mode without OpenRouter credentials. The backend will use mock responses for testing the chat functionality and file uploads.
 
 ## API Endpoints
 
@@ -146,7 +147,7 @@ Maximum files per message: 5 files
 - **Keyboard Shortcuts**: 
   - `Enter` to send message
   - `Shift + Enter` for new line
-- **Azure AI Integration**: Real-time responses from Azure OpenAI
+- **OpenRouter Integration**: Real-time responses from various LLMs
 - **Session Management**: Conversation context maintained across messages
 - **Error Handling**: Graceful fallback and error messages
 
@@ -163,7 +164,7 @@ Maximum files per message: 5 files
 
 - **Frontend**: Angular 20+ with standalone components
 - **Backend**: Node.js with Express.js
-- **AI Integration**: Azure OpenAI API
+- **AI Integration**: OpenRouter API for multiple LLM access
 - **File Upload**: Multer middleware
 - **Styling**: Pure CSS with modern design patterns
 - **State Management**: Angular services with RxJS

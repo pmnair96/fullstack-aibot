@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService, ChatMessage, FileAttachment } from '../services/chat.service';
@@ -12,6 +12,11 @@ import { ChatService, ChatMessage, FileAttachment } from '../services/chat.servi
       <div class="chat-header">
         <h1>Genie AI Assistant</h1>
         <p>Ask me anything! You can also upload images, Excel, PDF, and Word files.</p>
+        <div class="connection-status" [ngClass]="'status-' + connectionStatus">
+          <span *ngIf="connectionStatus === 'checking'">🔄 Checking connection...</span>
+          <span *ngIf="connectionStatus === 'connected'">✅ Connected to server</span>
+          <span *ngIf="connectionStatus === 'disconnected'">❌ Server unavailable</span>
+        </div>
       </div>
       
       <div class="chat-messages" #messagesContainer>
@@ -123,7 +128,7 @@ import { ChatService, ChatMessage, FileAttachment } from '../services/chat.servi
   `,
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements AfterViewChecked {
+export class ChatComponent implements AfterViewChecked, OnInit {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
 
@@ -139,6 +144,7 @@ export class ChatComponent implements AfterViewChecked {
   currentMessage = '';
   isLoading = false;
   selectedFiles: FileAttachment[] = [];
+  selectedFileObjects: File[] = []; // Store actual File objects for upload
   
   // Supported file types
   readonly supportedTypes = {
@@ -155,10 +161,36 @@ export class ChatComponent implements AfterViewChecked {
     'application/vnd.ms-excel.sheet.macroEnabled.12': true
   };
 
-  constructor(private chatService: ChatService) {}
+  // Connection status
+  connectionStatus: 'checking' | 'connected' | 'disconnected' = 'connected';
+
+  constructor(private chatService: ChatService) {
+    // Welcome message is already in the messages array above
+  }
+
+  ngOnInit() {
+    // Test backend connection on startup
+    this.testBackendConnection();
+  }
 
   ngAfterViewChecked() {
     this.scrollToBottom();
+  }
+
+  private testBackendConnection() {
+    console.log('Testing backend connection...');
+    this.connectionStatus = 'checking';
+    
+    this.chatService.checkHealth().subscribe({
+      next: (response) => {
+        console.log('Backend connection successful:', response);
+        this.connectionStatus = 'connected';
+      },
+      error: (error) => {
+        console.error('Backend connection failed:', error);
+        this.connectionStatus = 'disconnected';
+      }
+    });
   }
 
   onKeyDown(event: KeyboardEvent) {
@@ -183,11 +215,12 @@ export class ChatComponent implements AfterViewChecked {
     const messageText = this.currentMessage || 'Please analyze the uploaded files';
     const attachments = this.selectedFiles.length > 0 ? [...this.selectedFiles] : undefined;
     
-    // Convert FileAttachment objects to actual File objects for upload
-    const filesToUpload: File[] = [];
+    // Use the stored File objects for upload
+    const filesToUpload: File[] = [...this.selectedFileObjects];
     
     this.currentMessage = '';
     this.selectedFiles = [];
+    this.selectedFileObjects = []; // Clear file objects too
     this.isLoading = true;
 
     // Add loading message
@@ -270,6 +303,9 @@ export class ChatComponent implements AfterViewChecked {
         type: file.type
       };
 
+      // Store the actual File object for upload
+      this.selectedFileObjects.push(file);
+
       // For images, create a preview
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
@@ -287,11 +323,16 @@ export class ChatComponent implements AfterViewChecked {
   }
 
   removeFile(fileId: string) {
-    this.selectedFiles = this.selectedFiles.filter(f => f.id !== fileId);
+    const index = this.selectedFiles.findIndex(f => f.id === fileId);
+    if (index !== -1) {
+      this.selectedFiles.splice(index, 1);
+      this.selectedFileObjects.splice(index, 1);
+    }
   }
 
   clearFiles() {
     this.selectedFiles = [];
+    this.selectedFileObjects = [];
   }
 
   trackByFileId(index: number, file: FileAttachment): string {
