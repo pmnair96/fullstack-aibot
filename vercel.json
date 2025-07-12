@@ -22,7 +22,9 @@
     }
   ],
   "env": {
-    "OPENROUTER_API_KEY": "@openrouter_api_key",
-    "OPENROUTER_MODEL": "deepseek/deepseek-chat-v3-0324:free"
+    "OPENROUTER_API_KEY": "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",
+    "OPENROUTER_MODEL": "deepseek/deepseek-chat-v3-0324:free",
+    "OPENROUTER_SITE_URL": "https://fullstack-aibot.vercel.app",
+    "OPENROUTER_APP_NAME": "Genie-AI-Assistant"
   }
 }
