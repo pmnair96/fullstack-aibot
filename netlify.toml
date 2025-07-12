@@ -1,0 +1,29 @@
+[build]
+  base = "frontend"
+  publish = "dist/fullstack-aibot"
+  command = "npm install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[functions]]
+  directory = "backend"
+  included_files = ["**/*.py", "requirements.txt"]
+
+[dev]
+  framework = "#custom"
+  command = "npm run start"
+  targetPort = 4200
+  port = 8888
+  publish = "dist/fullstack-aibot"
+  autoLaunch = false
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
