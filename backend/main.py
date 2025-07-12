@@ -14,13 +14,20 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-12T22:40:00Z
+# Deployment timestamp: 2025-07-12T23:00:00Z - CORS fix for Surge.sh
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
-# CORS middleware
+# CORS middleware - Allow both localhost and Surge.sh domain
+allowed_origins = [
+    "http://localhost:4200",
+    "https://localhost:4200", 
+    "https://zealous-feet.surge.sh",
+    os.getenv("FRONTEND_URL", "http://localhost:4200")
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv("FRONTEND_URL", "http://localhost:4200")],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
