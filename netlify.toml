@@ -1,26 +1,20 @@
 [build]
-  base = "frontend"
-  publish = "dist/fullstack-aibot"
-  command = "npm install && npm run build"
+  publish = "public"
+  command = "echo 'Using pre-built files'"
 
 [build.environment]
-  NODE_VERSION = "18"
+  OPENROUTER_API_KEY = "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"
+  OPENROUTER_MODEL = "deepseek/deepseek-chat-v3-0324:free"
+  OPENROUTER_SITE_URL = "https://fullstack-aibot.netlify.app"
+  OPENROUTER_APP_NAME = "Genie-AI-Assistant"
 
 [[functions]]
-  directory = "backend"
+  directory = "netlify/functions"
   included_files = ["**/*.py", "requirements.txt"]
-
-[dev]
-  framework = "#custom"
-  command = "npm run start"
-  targetPort = 4200
-  port = 8888
-  publish = "dist/fullstack-aibot"
-  autoLaunch = false
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/.netlify/functions/api/:splat"
   status = 200
 
 [[redirects]]
