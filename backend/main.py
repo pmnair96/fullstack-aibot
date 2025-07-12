@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-12T23:00:00Z - CORS fix for Surge.sh
+# Deployment timestamp: 2025-07-12T23:15:00Z - Fix chat API to accept JSON requests
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -131,49 +131,16 @@ async def health_check():
     )
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat_endpoint(
-    message: str = Form(...),
-    files: List[UploadFile] = File(default=[])
-):
-    """Chat endpoint that handles messages and optional file uploads"""
+async def chat_endpoint(chat_message: ChatMessage):
+    """Chat endpoint that handles JSON messages"""
     try:
-        # Handle file uploads
-        file_context = ""
-        uploaded_files = []
+        message = chat_message.message
         
-        if files:
-            for file in files:
-                if file and file.filename:
-                    # Generate unique filename
-                    file_extension = os.path.splitext(file.filename)[1]
-                    unique_filename = f"{uuid.uuid4()}{file_extension}"
-                    file_path = os.path.join(UPLOAD_PATH, unique_filename)
-                    
-                    # Save file
-                    async with aiofiles.open(file_path, 'wb') as f:
-                        content = await file.read()
-                        await f.write(content)
-                    
-                    uploaded_files.append({
-                        "original_name": file.filename,
-                        "saved_name": unique_filename,
-                        "size": len(content),
-                        "type": file.content_type
-                    })
-                    
-                    # Read file content for context (text files only)
-                    if file.content_type and file.content_type.startswith('text/'):
-                        try:
-                            async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
-                                file_content = await f.read()
-                                file_context += f"\n\nFile '{file.filename}' content:\n{file_content[:1000]}..."
-                        except Exception as e:
-                            file_context += f"\n\nFile '{file.filename}' uploaded but could not read content: {str(e)}"
-                    else:
-                        file_context += f"\n\nFile '{file.filename}' uploaded (binary file, {len(content)} bytes)"
+        # For now, we'll ignore file uploads since frontend doesn't support them yet
+        # This can be enhanced later to handle file uploads via JSON
         
         # Get AI response
-        ai_response = await call_openrouter_api(message, file_context if file_context else None)
+        ai_response = await call_openrouter_api(message)
         
         return ChatResponse(
             response=ai_response,
