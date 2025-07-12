@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-12T23:45:00Z - Add friendly fallback responses for API issues
+# Deployment timestamp: 2025-07-12T23:55:00Z - Updated OpenRouter API key
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
