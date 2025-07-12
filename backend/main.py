@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Deployment timestamp: 2025-07-12T22:40:00Z
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware
