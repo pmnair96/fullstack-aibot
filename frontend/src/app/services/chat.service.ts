@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface ChatMessage {
   id: string;
@@ -43,7 +44,7 @@ export interface ChatResponse {
   providedIn: 'root'
 })
 export class ChatService {
-  private readonly API_URL = '/api';
+  private readonly API_URL = environment.apiUrl;
   private sessionId: string | null = null;
 
   constructor(private http: HttpClient) {}
