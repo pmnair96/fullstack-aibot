@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-12T23:55:00Z - Updated OpenRouter API key
+# Deployment timestamp: 2025-07-13T00:05:00Z - Hardcode new API key as fallback
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -49,8 +49,11 @@ class HealthResponse(BaseModel):
     openrouter_configured: bool
     environment: str
 
-# OpenRouter configuration
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# OpenRouter configuration - Check multiple sources for API key
+OPENROUTER_API_KEY = (
+    os.getenv("OPENROUTER_API_KEY") or 
+    "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"  # Fallback to new key
+)
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free")
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:4200")
 OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Genie-AI-Assistant")
