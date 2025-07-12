@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-13T00:05:00Z - Hardcode new API key as fallback
+# Deployment timestamp: 2025-07-13T00:15:00Z - Force new API key deployment
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -64,12 +64,15 @@ os.makedirs(UPLOAD_PATH, exist_ok=True)
 
 async def call_openrouter_api(message: str, context: Optional[str] = None) -> str:
     """Call OpenRouter API for AI response"""
-    if not OPENROUTER_API_KEY or OPENROUTER_API_KEY == "your_openrouter_api_key_here":
+    # Force use of new API key
+    current_api_key = "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"
+    
+    if not current_api_key or current_api_key == "your_openrouter_api_key_here":
         return f"Mock AI Response: I received your message '{message}'. This is a fallback response since OpenRouter API key is not configured."
     
     try:
         headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {current_api_key}",
             "HTTP-Referer": OPENROUTER_SITE_URL,
             "X-Title": OPENROUTER_APP_NAME,
             "Content-Type": "application/json"
@@ -80,7 +83,7 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
             prompt = f"Context: {context}\n\nUser message: {message}"
         
         payload = {
-            "model": OPENROUTER_MODEL,
+            "model": "deepseek/deepseek-chat-v3-0324:free",
             "messages": [
                 {
                     "role": "system",
@@ -95,9 +98,9 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
             "temperature": 0.7
         }
         
-        print(f"Making request to OpenRouter with model: {OPENROUTER_MODEL}")
-        print(f"API Key present: {bool(OPENROUTER_API_KEY)}")
-        print(f"API Key length: {len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0}")
+        print(f"Making request to OpenRouter with new API key")
+        print(f"Using model: {payload['model']}")
+        print(f"Message: {message}")
         
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
@@ -117,11 +120,11 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
                 
                 # For specific errors, provide helpful fallback responses
                 if response.status_code == 401:
-                    return f"🤖 Genie AI (Demo Mode): Hello! I received your message '{message}'. I'm currently running in demo mode because there's an API authentication issue. The chatbot functionality is working perfectly - we just need to update the OpenRouter API key."
+                    return f"🤖 Genie AI: Authentication issue detected. Checking API key validity..."
                 elif response.status_code == 429:
-                    return f"🤖 Genie AI (Rate Limited): I received your message '{message}'. The AI service is temporarily rate-limited, but I'm here and ready to chat once the limit resets!"
+                    return f"🤖 Genie AI: Rate limit reached. Please try again in a moment."
                 else:
-                    return f"🤖 Genie AI (Fallback): Hello! I got your message '{message}'. I'm working on connecting to the main AI service (Error {response.status_code}), but the chat system is functioning properly!"
+                    return f"🤖 Genie AI: Temporary service issue (Error {response.status_code}). Your message was received."
                 
     except Exception as e:
         print(f"Error calling OpenRouter API: {str(e)}")
