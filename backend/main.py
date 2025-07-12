@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-12T23:15:00Z - Fix chat API to accept JSON requests
+# Deployment timestamp: 2025-07-12T23:30:00Z - Add debugging for API key authentication
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -92,6 +92,10 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
             "temperature": 0.7
         }
         
+        print(f"Making request to OpenRouter with model: {OPENROUTER_MODEL}")
+        print(f"API Key present: {bool(OPENROUTER_API_KEY)}")
+        print(f"API Key length: {len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0}")
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
@@ -99,11 +103,19 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
                 json=payload
             )
             
+            print(f"OpenRouter response status: {response.status_code}")
+            
             if response.status_code == 200:
                 result = response.json()
                 return result["choices"][0]["message"]["content"]
             else:
-                print(f"OpenRouter API error: {response.status_code} - {response.text}")
+                error_text = response.text
+                print(f"OpenRouter API error: {response.status_code} - {error_text}")
+                
+                # For 401 errors, provide more helpful message
+                if response.status_code == 401:
+                    return "I apologize, but there's an authentication issue with the AI service. The API key may be invalid or expired. Please check the configuration."
+                
                 return f"I apologize, but I'm having trouble connecting to the AI service right now. Error: {response.status_code}"
                 
     except Exception as e:
