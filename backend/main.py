@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-13T00:15:00Z - Force new API key deployment
+# Deployment timestamp: 2025-07-13T00:25:00Z - Enhanced with multiple models and smart fallback
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -73,8 +73,8 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
     try:
         headers = {
             "Authorization": f"Bearer {current_api_key}",
-            "HTTP-Referer": OPENROUTER_SITE_URL,
-            "X-Title": OPENROUTER_APP_NAME,
+            "HTTP-Referer": "https://zealous-feet.surge.sh",
+            "X-Title": "Genie-AI-Assistant",
             "Content-Type": "application/json"
         }
         
@@ -82,49 +82,60 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
         if context:
             prompt = f"Context: {context}\n\nUser message: {message}"
         
-        payload = {
-            "model": "deepseek/deepseek-chat-v3-0324:free",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are Genie, a helpful AI assistant. Provide clear, concise, and helpful responses."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "max_tokens": 1000,
-            "temperature": 0.7
-        }
+        # Try multiple models in case one doesn't work
+        models_to_try = [
+            "meta-llama/llama-3.1-8b-instruct:free",
+            "google/gemini-2.0-flash-exp:free", 
+            "deepseek/deepseek-chat-v3-0324:free"
+        ]
         
-        print(f"Making request to OpenRouter with new API key")
-        print(f"Using model: {payload['model']}")
-        print(f"Message: {message}")
-        
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers=headers,
-                json=payload
-            )
+        for model in models_to_try:
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are Genie, a helpful AI assistant. Provide clear, concise, and helpful responses."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.7
+            }
             
-            print(f"OpenRouter response status: {response.status_code}")
+            print(f"Trying model: {model}")
+            print(f"API Key (first 20 chars): {current_api_key[:20]}...")
             
-            if response.status_code == 200:
-                result = response.json()
-                return result["choices"][0]["message"]["content"]
-            else:
-                error_text = response.text
-                print(f"OpenRouter API error: {response.status_code} - {error_text}")
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
                 
-                # For specific errors, provide helpful fallback responses
-                if response.status_code == 401:
-                    return f"🤖 Genie AI: Authentication issue detected. Checking API key validity..."
-                elif response.status_code == 429:
-                    return f"🤖 Genie AI: Rate limit reached. Please try again in a moment."
+                print(f"Response status for {model}: {response.status_code}")
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return f"✅ {result['choices'][0]['message']['content']} (Model: {model})"
+                elif response.status_code == 401:
+                    print(f"Auth failed for {model}: {response.text[:200]}")
+                    continue
                 else:
-                    return f"🤖 Genie AI: Temporary service issue (Error {response.status_code}). Your message was received."
+                    print(f"Error {response.status_code} for {model}: {response.text[:200]}")
+                    continue
+        
+        # If all models fail, try mock response
+        mock_response = get_mock_ai_response(message)
+        return f"🤖 Genie AI (Demo): {mock_response} \n\n(Note: Currently using demo mode while working on API connectivity)"
+                
+    except Exception as e:
+        print(f"Exception in API call: {str(e)}")
+        mock_response = get_mock_ai_response(message)
+        return f"🤖 Genie AI (Demo): {mock_response} \n\n(Note: Currently using demo mode while working on API connectivity)"
                 
     except Exception as e:
         print(f"Error calling OpenRouter API: {str(e)}")
@@ -133,6 +144,23 @@ async def call_openrouter_api(message: str, context: Optional[str] = None) -> st
     except Exception as e:
         print(f"Error calling OpenRouter API: {str(e)}")
         return f"I apologize, but I encountered an error while processing your request. Please try again later."
+
+def get_mock_ai_response(message: str) -> str:
+    """Generate a mock AI response for demonstration purposes"""
+    message_lower = message.lower()
+    
+    if any(word in message_lower for word in ['hello', 'hi', 'hey']):
+        return "Hello! 👋 I'm Genie, your AI assistant. How can I help you today?"
+    elif any(word in message_lower for word in ['how are you', 'how do you do']):
+        return "I'm doing great, thank you for asking! I'm here and ready to help with any questions or tasks you have."
+    elif any(word in message_lower for word in ['what can you do', 'help', 'capabilities']):
+        return "I can help with a wide variety of tasks including answering questions, providing explanations, helping with writing, coding assistance, problem-solving, and much more. What would you like to explore?"
+    elif any(word in message_lower for word in ['weather', 'time']):
+        return "I don't have access to real-time data like weather or current time, but I can help with many other things! What else can I assist you with?"
+    elif any(word in message_lower for word in ['thank', 'thanks']):
+        return "You're very welcome! I'm happy to help. Is there anything else you'd like to know or discuss?"
+    else:
+        return f"That's an interesting point about '{message}'. I'd love to help you explore that topic further. Could you tell me more about what specific aspect you're most curious about?"
 
 @app.get("/", response_model=HealthResponse)
 async def root():
