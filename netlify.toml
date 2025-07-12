@@ -1,6 +1,6 @@
 [build]
   publish = "public"
-  command = "echo 'Using pre-built files'"
+  command = "echo 'Static files ready'"
 
 [build.environment]
   OPENROUTER_API_KEY = "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"
@@ -10,7 +10,6 @@
 
 [[functions]]
   directory = "netlify/functions"
-  included_files = ["**/*.py", "requirements.txt"]
 
 [[redirects]]
   from = "/api/*"
