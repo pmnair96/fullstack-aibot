@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://your-backend-api.railway.app'  // Update this with your actual Railway backend URL
+  apiUrl: 'https://fullstack-aibot-backend.onrender.com'  // Render backend URL
 };
