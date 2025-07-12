@@ -1,53 +1,61 @@
-# Geni- 🎯 Clean, modern ChatGPT-inspired UI
-- 💬 Real-time chat interface with typing indicators
-- 📁 File upload support (Images, PDF, Excel, Word documents)
-- 🤖 OpenRouter integration for intelligent responses with multiple LLM options
-- 📱 Responsive design for mobile and desktop
-- ⚡ Fast loading with Angular standalone components
-- 🎨 Beautiful animations and transitions
-- 🔒 Secure backend with rate limiting and validation
-- 📊 Health monitoring and loggingsistant
+# 🧞 Genie AI Assistant
 
-A full-stack ChatGPT-like application built with Angular frontend and Node.js backend that provides an interactive chat interface for AI conversations with OpenRouter integration.
+A modern full-stack ChatGPT-like application built with **Angular frontend** and **Python FastAPI backend** that provides an interactive chat interface with real AI capabilities powered by OpenRouter.
 
-## Features
+## ✨ Features
 
 - 🎯 Clean, modern ChatGPT-inspired UI
-- 💬 Real-time chat interface with typing indicators
-- � File upload support for images, PDF, Excel, and Word documents
-- 🖼️ Image preview functionality
+- 💬 Real-time chat interface with AI responses
+- 📁 File upload support (Images, PDF, Excel, Word documents)
+- 🤖 **Real OpenRouter integration** with multiple LLM options
+- � AI-powered search functionality
 - �📱 Responsive design for mobile and desktop
 - ⚡ Fast loading with Angular standalone components
 - 🎨 Beautiful animations and transitions
+- 🔒 Secure backend with FastAPI and async processing
+- 📊 Health monitoring and API documentation
+- 🐳 Docker containerization ready
+- 🚀 Multiple deployment options
 
-## Project Structure
+## 🏗️ Tech Stack
+
+**Frontend:**
+- Angular 20+ (Standalone Components)
+- TypeScript
+- Modern CSS with animations
+- Responsive design
+
+**Backend:**
+- Python FastAPI
+- OpenRouter API integration
+- Async file processing
+- Pydantic data validation
+- Auto-generated API docs
+
+**Deployment:**
+- Docker & Docker Compose
+- Multiple cloud platform support
+- CI/CD with GitHub Actions
+
+## 📁 Project Structure
 
 ```
-frontend/  
-├── src/
-│   ├── app/
-│   │   ├── components/
-│   │   │   ├── chat.component.ts    # Main chat interface
-│   │   │   └── chat.component.css   # Chat styling
-│   │   ├── services/
-│   │   │   └── chat.service.ts      # Mock chat service
-│   │   ├── app.config.ts           # App configuration
-│   │   ├── app.routes.ts           # Routing configuration
-│   │   ├── app.ts                  # Root component
-│   │   └── app.html                # Root template
-│   ├── main.ts                     # Application bootstrap
-│   ├── index.html                  # Main HTML file
-│   └── styles.css                  # Global styles
-├── package.json                    # Dependencies
-└── angular.json                    # Angular configuration
+├── frontend/              # Angular application
+│   ├── src/app/
+│   │   ├── components/    # Chat components
+│   │   ├── services/      # HTTP services
+│   │   └── environments/  # Environment configs
+│   ├── Dockerfile         # Frontend container
+│   └── nginx.conf         # Production web server
+├── backend/               # Python FastAPI application
+│   ├── main.py           # FastAPI app with OpenRouter
+│   ├── requirements.txt  # Python dependencies
+│   ├── Dockerfile        # Backend container
+│   └── uploads/          # File upload directory
+├── docker-compose.yml    # Multi-container deployment
+├── deploy.sh            # Quick deployment script
+└── DEPLOYMENT.md        # Comprehensive deployment guide
 ```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn
 - OpenRouter API account (optional for development)
 
 ### Backend Setup
@@ -188,3 +196,46 @@ This project is licensed under the MIT License.
 ---
 
 **Created by Pranav** ✨
+
+## 🚀 Quick Deployment
+
+### Option 1: Docker (Recommended)
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/fullstack-aibot.git
+cd fullstack-aibot
+
+# 2. Configure environment
+cp .env.production .env
+# Edit .env with your OpenRouter API key
+
+# 3. Deploy with Docker
+./deploy.sh
+```
+
+**Access Points:**
+- 🌐 Frontend: http://localhost
+- 🔧 Backend API: http://localhost:8000
+- 📚 API Docs: http://localhost:8000/docs
+
+### Option 2: Cloud Platforms
+
+**Quick Deploy Options:**
+- 🟦 **Vercel + Railway**: Frontend on Vercel, Backend on Railway
+- 🟪 **Heroku**: Both frontend and backend on Heroku
+- 🟩 **DigitalOcean**: App Platform deployment
+- 🟨 **Render**: Full-stack deployment
+
+📖 **See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed platform-specific instructions**
+
+## 🔧 Configuration
+
+### Required Environment Variables
+```bash
+OPENROUTER_API_KEY=your_openrouter_api_key  # Get from https://openrouter.ai/keys
+OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324:free
+OPENROUTER_SITE_URL=https://your-domain.com
+SECRET_KEY=your-strong-secret-key
+```
+
+### Development Setup

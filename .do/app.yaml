@@ -1,0 +1,54 @@
+# DigitalOcean App Platform Specification
+name: genie-ai-assistant
+services:
+- name: backend
+  source_dir: /backend
+  github:
+    repo: your-username/fullstack-aibot
+    branch: main
+  run_command: uvicorn main:app --host 0.0.0.0 --port $PORT
+  environment_slug: python
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  env:
+  - key: NODE_ENV
+    value: "production"
+  - key: OPENROUTER_API_KEY
+    value: "${OPENROUTER_API_KEY}"
+    type: SECRET
+  - key: OPENROUTER_MODEL
+    value: "deepseek/deepseek-chat-v3-0324:free"
+  - key: OPENROUTER_SITE_URL
+    value: "https://your-app.ondigitalocean.app"
+  - key: OPENROUTER_APP_NAME
+    value: "Genie-AI-Assistant"
+  - key: FRONTEND_URL
+    value: "https://your-app.ondigitalocean.app"
+  - key: SECRET_KEY
+    value: "${SECRET_KEY}"
+    type: SECRET
+
+- name: frontend
+  source_dir: /frontend
+  github:
+    repo: your-username/fullstack-aibot
+    branch: main
+  build_command: npm run build
+  run_command: echo "Static site"
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+
+static_sites:
+- name: frontend-static
+  source_dir: /frontend
+  github:
+    repo: your-username/fullstack-aibot
+    branch: main
+  build_command: npm run build
+  output_dir: /dist/fullstack-aibot
+  routes:
+  - path: /api
+    preserve_path_prefix: true
+  - path: /
+    preserve_path_prefix: false

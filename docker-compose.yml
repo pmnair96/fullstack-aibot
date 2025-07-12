@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: genie-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324:free}
+      - OPENROUTER_SITE_URL=${OPENROUTER_SITE_URL:-https://your-domain.com}
+      - OPENROUTER_APP_NAME=${OPENROUTER_APP_NAME:-Genie-AI-Assistant}
+      - FRONTEND_URL=${FRONTEND_URL:-https://your-domain.com}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - UPLOAD_PATH=./uploads
+      - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
+    volumes:
+      - backend-uploads:/app/uploads
+    networks:
+      - genie-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    container_name: genie-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - genie-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  backend-uploads:
+    driver: local
+
+networks:
+  genie-network:
+    driver: bridge
