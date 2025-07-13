@@ -142,8 +142,15 @@ async def call_azure_openai_api(message: str, context: Optional[str] = None) -> 
         return get_mock_ai_response(message)
     
     try:
-        # Build the Azure OpenAI endpoint URL
-        url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions"
+        # Check if endpoint already includes the full path
+        if "chat/completions" in AZURE_OPENAI_ENDPOINT:
+            # Full URL provided (new format)
+            url = AZURE_OPENAI_ENDPOINT
+            params = {}  # API version already in URL
+        else:
+            # Base endpoint provided (old format)
+            url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions"
+            params = {"api-version": AZURE_OPENAI_API_VERSION}
         
         headers = {
             "Content-Type": "application/json",
@@ -168,9 +175,6 @@ async def call_azure_openai_api(message: str, context: Optional[str] = None) -> 
             "max_tokens": 1000,
             "temperature": 0.7
         }
-        
-        # Add API version as query parameter
-        params = {"api-version": AZURE_OPENAI_API_VERSION}
         
         print(f"Making request to Azure OpenAI: {AZURE_OPENAI_DEPLOYMENT_NAME}")
         print(f"Endpoint: {url}")
