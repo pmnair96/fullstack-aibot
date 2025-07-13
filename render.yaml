@@ -12,13 +12,13 @@ services:
     startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: AZURE_OPENAI_ENDPOINT
-        value: https://your-resource-name.openai.azure.com/
+        value: https://lives-md0y3cx3-swedencentral.openai.azure.com/
       - key: AZURE_OPENAI_API_KEY
-        value: your_azure_openai_api_key_here
+        value: 5TjGA5au7VnHB5Z9HUVF27dhpXdK5NLhRcIM9wxT6jOOGVvb7iSaJQQJ99BGACfhMk5XJ3w3AAAAACOGUU8E
       - key: AZURE_OPENAI_API_VERSION
         value: 2024-02-15-preview
       - key: AZURE_OPENAI_DEPLOYMENT_NAME
-        value: gpt-35-turbo
+        value: gpt-4o
       - key: NODE_ENV
         value: production
       - key: FRONTEND_URL
