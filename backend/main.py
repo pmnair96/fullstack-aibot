@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-13T00:35:00Z - Switched to open-source LLMs (HuggingFace + Cohere)
+# Deployment timestamp: 2025-07-13T00:45:00Z - Complete migration to Azure OpenAI Service
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -49,94 +49,79 @@ class HealthResponse(BaseModel):
     openrouter_configured: bool
     environment: str
 
-# OpenRouter configuration - Check multiple sources for API key
-OPENROUTER_API_KEY = (
-    os.getenv("OPENROUTER_API_KEY") or 
-    "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"  # Fallback to new key
-)
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat-v3-0324:free")
-OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:4200")
-OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Genie-AI-Assistant")
+# Azure OpenAI configuration
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-35-turbo")
 
 # Create uploads directory
 UPLOAD_PATH = os.getenv("UPLOAD_PATH", "./uploads")
 os.makedirs(UPLOAD_PATH, exist_ok=True)
 
-async def call_huggingface_api(message: str, context: Optional[str] = None) -> str:
-    """Call Hugging Face Inference API for AI response"""
+async def call_azure_openai_api(message: str, context: Optional[str] = None) -> str:
+    """Call Azure OpenAI API for AI response"""
+    if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY or AZURE_OPENAI_API_KEY == "your_azure_openai_api_key_here":
+        return get_mock_ai_response(message)
+    
     try:
-        # Hugging Face models that work without API keys
-        models_to_try = [
-            "microsoft/DialoGPT-medium",
-            "facebook/blenderbot-400M-distill",
-            "microsoft/DialoGPT-small"
-        ]
+        # Build the Azure OpenAI endpoint URL
+        url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT_NAME}/chat/completions"
+        
+        headers = {
+            "Content-Type": "application/json",
+            "api-key": AZURE_OPENAI_API_KEY
+        }
         
         prompt = message
         if context:
-            prompt = f"Context: {context}\n\nUser: {message}"
+            prompt = f"Context: {context}\n\nUser message: {message}"
         
-        for model in models_to_try:
-            try:
-                print(f"Trying Hugging Face model: {model}")
-                
-                # Hugging Face Inference API endpoint
-                url = f"https://api-inference.huggingface.co/models/{model}"
-                
-                headers = {
-                    "Content-Type": "application/json"
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are Genie, a helpful AI assistant. Provide clear, concise, and helpful responses."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
                 }
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.7
+        }
+        
+        # Add API version as query parameter
+        params = {"api-version": AZURE_OPENAI_API_VERSION}
+        
+        print(f"Making request to Azure OpenAI: {AZURE_OPENAI_DEPLOYMENT_NAME}")
+        print(f"Endpoint: {url}")
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(url, headers=headers, json=payload, params=params)
+            
+            print(f"Azure OpenAI response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                result = response.json()
+                ai_response = result["choices"][0]["message"]["content"]
+                return f"✅ {ai_response} (Powered by Azure OpenAI)"
+            else:
+                error_text = response.text
+                print(f"Azure OpenAI API error: {response.status_code} - {error_text}")
                 
-                payload = {
-                    "inputs": prompt,
-                    "parameters": {
-                        "max_length": 200,
-                        "temperature": 0.7,
-                        "do_sample": True
-                    }
-                }
+                if response.status_code == 401:
+                    return "🔐 Authentication issue with Azure OpenAI. Please check your API key and endpoint configuration."
+                elif response.status_code == 429:
+                    return "⏱️ Azure OpenAI rate limit reached. Please try again in a moment."
+                elif response.status_code == 404:
+                    return "🔍 Azure OpenAI deployment not found. Please check your deployment name configuration."
+                else:
+                    return get_mock_ai_response(message)
                 
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    response = await client.post(url, headers=headers, json=payload)
-                    
-                    print(f"Hugging Face response status for {model}: {response.status_code}")
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        if isinstance(result, list) and len(result) > 0:
-                            generated_text = result[0].get('generated_text', '')
-                            # Clean up the response
-                            if generated_text:
-                                # Remove the input prompt from the response
-                                if prompt in generated_text:
-                                    ai_response = generated_text.replace(prompt, '').strip()
-                                else:
-                                    ai_response = generated_text.strip()
-                                
-                                if ai_response:
-                                    return f"🤖 {ai_response} (Powered by {model.split('/')[-1]})"
-                    
-                    elif response.status_code == 503:
-                        print(f"Model {model} is loading, trying next...")
-                        continue
-                    else:
-                        print(f"Error {response.status_code} for {model}: {response.text[:200]}")
-                        continue
-                        
-            except Exception as e:
-                print(f"Error with model {model}: {str(e)}")
-                continue
-        
-        # If Hugging Face fails, try Cohere free API
-        cohere_response = await call_cohere_free_api(message)
-        if cohere_response:
-            return cohere_response
-        
-        # If all APIs fail, fall back to mock AI
-        return get_mock_ai_response(message)
-        
     except Exception as e:
-        print(f"Exception in Hugging Face API call: {str(e)}")
+        print(f"Exception in Azure OpenAI API call: {str(e)}")
         return get_mock_ai_response(message)
                 
     except Exception as e:
@@ -180,7 +165,7 @@ async def root():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
-        openrouter_configured=bool(OPENROUTER_API_KEY and OPENROUTER_API_KEY != "your_openrouter_api_key_here"),
+        openrouter_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
         environment=os.getenv("NODE_ENV", "development")
     )
 
@@ -190,7 +175,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
-        openrouter_configured=bool(OPENROUTER_API_KEY and OPENROUTER_API_KEY != "your_openrouter_api_key_here"),
+        openrouter_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
         environment=os.getenv("NODE_ENV", "development")
     )
 
@@ -203,13 +188,13 @@ async def chat_endpoint(chat_message: ChatMessage):
         # For now, we'll ignore file uploads since frontend doesn't support them yet
         # This can be enhanced later to handle file uploads via JSON
         
-        # Get AI response from Hugging Face
-        ai_response = await call_huggingface_api(message)
+        # Get AI response from Azure OpenAI
+        ai_response = await call_azure_openai_api(message)
         
         return ChatResponse(
             response=ai_response,
             timestamp=datetime.now().isoformat(),
-            model_used=OPENROUTER_MODEL
+            model_used=AZURE_OPENAI_DEPLOYMENT_NAME
         )
         
     except Exception as e:
@@ -222,13 +207,13 @@ async def ai_search(query: ChatMessage):
     try:
         search_prompt = f"Please search for and provide information about: {query.message}. Provide a comprehensive and well-structured response."
         
-        ai_response = await call_huggingface_api(search_prompt)
+        ai_response = await call_azure_openai_api(search_prompt)
         
         return {
             "query": query.message,
             "results": ai_response,
             "timestamp": datetime.now().isoformat(),
-            "model_used": OPENROUTER_MODEL
+            "model_used": AZURE_OPENAI_DEPLOYMENT_NAME
         }
         
     except Exception as e:
@@ -237,15 +222,18 @@ async def ai_search(query: ChatMessage):
 
 @app.get("/api/models")
 async def get_available_models():
-    """Get list of available OpenRouter models"""
+    """Get list of available Azure OpenAI models"""
     return {
-        "current_model": OPENROUTER_MODEL,
-        "available_free_models": [
-            "deepseek/deepseek-chat-v3-0324:free",
-            "google/gemini-2.0-flash-exp:free",
-            "meta-llama/llama-3.1-8b-instruct:free"
+        "current_model": AZURE_OPENAI_DEPLOYMENT_NAME,
+        "available_models": [
+            "gpt-35-turbo",
+            "gpt-4",
+            "gpt-4-turbo",
+            "gpt-35-turbo-16k"
         ],
-        "configured": bool(OPENROUTER_API_KEY and OPENROUTER_API_KEY != "your_openrouter_api_key_here")
+        "configured": bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
+        "endpoint": AZURE_OPENAI_ENDPOINT,
+        "api_version": AZURE_OPENAI_API_VERSION
     }
 
 async def call_cohere_free_api(message: str) -> str:

@@ -11,17 +11,13 @@ services:
       pip install -r requirements.txt
     startCommand: cd backend && python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: OPENROUTER_API_KEY
-        value: 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
-      - key: OPENROUTER_MODEL
-        value: deepseek/deepseek-chat-v3-0324:free
-      - key: OPENROUTER_SITE_URL
-        value: https://fullstack-aibot.onrender.com
-      - key: OPENROUTER_APP_NAME
-        value: Genie-AI-Assistant
-      - key: OPENROUTER_MODEL
-        value: deepseek/deepseek-chat-v3-0324:free
-      - key: OPENROUTER_SITE_URL
-        value: https://fullstack-aibot-backend.onrender.com
-      - key: SECRET_KEY
-        value: your-super-secret-key-change-this
+      - key: AZURE_OPENAI_ENDPOINT
+        value: https://your-resource-name.openai.azure.com/
+      - key: AZURE_OPENAI_API_KEY
+        value: your_azure_openai_api_key_here
+      - key: AZURE_OPENAI_API_VERSION
+        value: 2024-02-15-preview
+      - key: AZURE_OPENAI_DEPLOYMENT_NAME
+        value: gpt-35-turbo
+      - key: NODE_ENV
+        value: production
