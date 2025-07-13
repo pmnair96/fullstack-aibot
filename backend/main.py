@@ -1,20 +1,17 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 import httpx
 import os
-import json
-import aiofiles
 from datetime import datetime
-import uuid
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Deployment timestamp: 2025-07-13T00:45:00Z - Complete migration to Azure OpenAI Service
+# Deployment timestamp: 2025-07-13T01:00:00Z - Clean Azure-only implementation
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
 # CORS middleware - Allow both localhost and Surge.sh domain
@@ -36,7 +33,6 @@ app.add_middleware(
 # Pydantic models
 class ChatMessage(BaseModel):
     message: str
-    files: Optional[List[str]] = []
 
 class ChatResponse(BaseModel):
     response: str
@@ -46,7 +42,7 @@ class ChatResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     timestamp: str
-    openrouter_configured: bool
+    azure_configured: bool
     environment: str
 
 # Azure OpenAI configuration
@@ -55,9 +51,85 @@ AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
 AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-35-turbo")
 
-# Create uploads directory
-UPLOAD_PATH = os.getenv("UPLOAD_PATH", "./uploads")
-os.makedirs(UPLOAD_PATH, exist_ok=True)
+def get_mock_ai_response(message: str) -> str:
+    """Generate a sophisticated mock AI response that feels like a real AI assistant"""
+    import random
+    message_lower = message.lower()
+    
+    # Greeting responses
+    if any(word in message_lower for word in ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening']):
+        greetings = [
+            "Hello! 👋 I'm Genie, your AI assistant. How can I help you today?",
+            "Hi there! Great to meet you. What can I assist you with?",
+            "Hello! I'm excited to help you with whatever you need. What's on your mind?",
+            "Hey! 👋 I'm here and ready to help. What would you like to explore together?"
+        ]
+        return random.choice(greetings)
+    
+    # How are you responses
+    elif any(word in message_lower for word in ['how are you', 'how do you do', 'how\'s it going', 'how have you been']):
+        responses = [
+            "I'm doing great, thank you for asking! I'm here and ready to help with any questions or tasks you have. What's on your mind?",
+            "I'm fantastic! Always excited to help and learn from our conversations. How are you doing today?",
+            "I'm doing wonderfully! Every conversation is a new adventure for me. How can I assist you today?"
+        ]
+        return random.choice(responses)
+    
+    # Capability questions
+    elif any(word in message_lower for word in ['what can you do', 'help', 'capabilities', 'what are you', 'who are you', 'abilities']):
+        capabilities = [
+            "I'm Genie, your AI assistant! I can help with answering questions, providing explanations, brainstorming ideas, helping with writing, problem-solving, coding assistance, math, research topics, and much more. What would you like to explore together?",
+            "Great question! I can assist with a wide range of tasks: answering questions, explaining concepts, helping with writing and editing, coding problems, creative brainstorming, math calculations, and general problem-solving. What specific area interests you?",
+            "I'm here to help with virtually anything! Whether you need explanations, creative help, technical assistance, problem-solving, or just want to have an interesting conversation. What challenge can I help you tackle?"
+        ]
+        return random.choice(capabilities)
+    
+    # Technical/coding questions
+    elif any(word in message_lower for word in ['code', 'programming', 'python', 'javascript', 'html', 'css', 'react', 'node', 'function', 'algorithm', 'debug']):
+        coding_responses = [
+            "I'd be happy to help with coding! Whether you need help debugging, learning a new concept, writing code from scratch, or understanding algorithms, just let me know what programming challenge you're working on.",
+            "Coding assistance is one of my favorite topics! I can help with multiple programming languages, debugging, code review, explaining concepts, or working through algorithms. What specific coding challenge are you facing?",
+            "Great! I love helping with programming. Whether it's Python, JavaScript, web development, or any other tech topic, I'm here to help. What would you like to work on?"
+        ]
+        return random.choice(coding_responses)
+    
+    # Thanks/appreciation
+    elif any(word in message_lower for word in ['thank', 'thanks', 'appreciate', 'grateful']):
+        thanks_responses = [
+            "You're very welcome! I'm happy to help. Feel free to ask me anything else - I'm here to assist you!",
+            "My pleasure! That's what I'm here for. Is there anything else you'd like to explore or discuss?",
+            "You're so welcome! I really enjoy helping and learning through our conversations. What else can I do for you?"
+        ]
+        return random.choice(thanks_responses)
+    
+    # Jokes/humor
+    elif any(word in message_lower for word in ['joke', 'funny', 'humor', 'laugh', 'comedy']):
+        jokes = [
+            "Here's one for you: Why don't scientists trust atoms? Because they make up everything! 😄 Want to hear another one?",
+            "I've got a good one: Why did the AI go to therapy? Because it had too many deep learning issues! 🤖 What else can I help you with?",
+            "Here's a classic: Why do programmers prefer dark mode? Because light attracts bugs! 💻 Need anything else?",
+            "How about this: What do you call a fake noodle? An impasta! 🍝 What else would you like to chat about?"
+        ]
+        return random.choice(jokes)
+    
+    # Short/unclear messages
+    elif len(message.strip()) < 3:
+        short_responses = [
+            "I'm here and listening! Feel free to ask me anything - questions, requests for help, or just want to chat. What's on your mind?",
+            "I'm ready to help! What would you like to talk about or work on together?",
+            "Hi there! I'm here to assist with whatever you need. What can I help you with today?"
+        ]
+        return random.choice(short_responses)
+    
+    # General fallback responses
+    else:
+        general_responses = [
+            f"That's an interesting topic about '{message}'! I'd love to help you explore that further. Could you tell me more about what specific aspect you're most curious about or what kind of help you're looking for?",
+            f"Thanks for sharing that about '{message}'. I'm intrigued! Could you give me a bit more context about what you'd like to know or how I can best assist you with this?",
+            f"Interesting point about '{message}'! I'd be happy to discuss this with you. What particular angle or question do you have in mind?",
+            f"I find '{message}' to be a fascinating topic! To give you the most helpful response, could you tell me more about what you're trying to understand or accomplish?"
+        ]
+        return random.choice(general_responses)
 
 async def call_azure_openai_api(message: str, context: Optional[str] = None) -> str:
     """Call Azure OpenAI API for AI response"""
@@ -123,41 +195,6 @@ async def call_azure_openai_api(message: str, context: Optional[str] = None) -> 
     except Exception as e:
         print(f"Exception in Azure OpenAI API call: {str(e)}")
         return get_mock_ai_response(message)
-                
-    except Exception as e:
-        print(f"Error calling OpenRouter API: {str(e)}")
-        return f"🤖 Genie AI (Connection Error): I received your message '{message}'. There's a temporary connection issue with the AI service, but your message was processed successfully!"
-                
-    except Exception as e:
-        print(f"Error calling OpenRouter API: {str(e)}")
-        return f"I apologize, but I encountered an error while processing your request. Please try again later."
-
-def get_mock_ai_response(message: str) -> str:
-    """Generate a mock AI response for demonstration purposes"""
-    message_lower = message.lower()
-    
-    if any(word in message_lower for word in ['hello', 'hi', 'hey', 'greetings']):
-        return "Hello! 👋 I'm Genie, your AI assistant. How can I help you today?"
-    elif any(word in message_lower for word in ['how are you', 'how do you do', 'how\'s it going']):
-        return "I'm doing great, thank you for asking! I'm here and ready to help with any questions or tasks you have. What's on your mind?"
-    elif any(word in message_lower for word in ['what can you do', 'help', 'capabilities', 'what are you', 'who are you']):
-        return "I'm Genie, your AI assistant! I can help with answering questions, providing explanations, brainstorming ideas, helping with writing, problem-solving, coding assistance, and much more. What would you like to explore together?"
-    elif any(word in message_lower for word in ['weather', 'time', 'date']):
-        return "I don't have access to real-time data like current weather or time, but I can help with many other things! Try asking me about topics you're curious about, need explanations for, or want help brainstorming."
-    elif any(word in message_lower for word in ['thank', 'thanks', 'appreciate']):
-        return "You're very welcome! I'm happy to help. Feel free to ask me anything else - I'm here to assist you!"
-    elif any(word in message_lower for word in ['joke', 'funny', 'humor']):
-        return "Here's one for you: Why don't scientists trust atoms? Because they make up everything! 😄 What else can I help you with?"
-    elif any(word in message_lower for word in ['code', 'programming', 'python', 'javascript']):
-        return "I'd be happy to help with coding! Whether you need help debugging, learning a new concept, or writing code from scratch, just let me know what programming challenge you're working on."
-    elif any(word in message_lower for word in ['explain', 'what is', 'define']):
-        return f"I'd be happy to explain that for you! Could you be a bit more specific about what aspect of '{message}' you'd like me to clarify? The more details you give me, the better I can help."
-    elif any(word in message_lower for word in ['idea', 'brainstorm', 'suggest', 'advice']):
-        return "I love helping with brainstorming! Could you tell me more about what kind of ideas you're looking for? Whether it's for a project, problem-solving, creative writing, or anything else - I'm here to help spark some inspiration."
-    elif len(message.strip()) < 3:
-        return "I'm here and listening! Feel free to ask me anything - questions, requests for help, or just want to chat. What's on your mind?"
-    else:
-        return f"That's an interesting topic about '{message}'! I'd love to help you explore that further. Could you tell me more about what specific aspect you're most curious about or what kind of help you're looking for?"
 
 @app.get("/", response_model=HealthResponse)
 async def root():
@@ -165,7 +202,7 @@ async def root():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
-        openrouter_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
+        azure_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
         environment=os.getenv("NODE_ENV", "development")
     )
 
@@ -175,7 +212,7 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         timestamp=datetime.now().isoformat(),
-        openrouter_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
+        azure_configured=bool(AZURE_OPENAI_API_KEY and AZURE_OPENAI_API_KEY != "your_azure_openai_api_key_here"),
         environment=os.getenv("NODE_ENV", "development")
     )
 
@@ -184,9 +221,6 @@ async def chat_endpoint(chat_message: ChatMessage):
     """Chat endpoint that handles JSON messages"""
     try:
         message = chat_message.message
-        
-        # For now, we'll ignore file uploads since frontend doesn't support them yet
-        # This can be enhanced later to handle file uploads via JSON
         
         # Get AI response from Azure OpenAI
         ai_response = await call_azure_openai_api(message)
@@ -199,26 +233,7 @@ async def chat_endpoint(chat_message: ChatMessage):
         
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
-@app.post("/api/search")
-async def ai_search(query: ChatMessage):
-    """AI-powered search endpoint using OpenRouter"""
-    try:
-        search_prompt = f"Please search for and provide information about: {query.message}. Provide a comprehensive and well-structured response."
-        
-        ai_response = await call_azure_openai_api(search_prompt)
-        
-        return {
-            "query": query.message,
-            "results": ai_response,
-            "timestamp": datetime.now().isoformat(),
-            "model_used": AZURE_OPENAI_DEPLOYMENT_NAME
-        }
-        
-    except Exception as e:
-        print(f"Error in search endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 @app.get("/api/models")
 async def get_available_models():
@@ -235,39 +250,6 @@ async def get_available_models():
         "endpoint": AZURE_OPENAI_ENDPOINT,
         "api_version": AZURE_OPENAI_API_VERSION
     }
-
-async def call_cohere_free_api(message: str) -> str:
-    """Call Cohere's free trial API"""
-    try:
-        # Cohere has a generous free tier
-        url = "https://api.cohere.ai/v1/generate"
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer TRIAL_KEY"  # Cohere allows trial usage
-        }
-        
-        payload = {
-            "model": "command-light",
-            "prompt": f"You are Genie, a helpful AI assistant. User asks: {message}\nGenie responds:",
-            "max_tokens": 200,
-            "temperature": 0.7,
-            "stop_sequences": ["\n\n"]
-        }
-        
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            
-            if response.status_code == 200:
-                result = response.json()
-                if 'generations' in result and len(result['generations']) > 0:
-                    ai_response = result['generations'][0]['text'].strip()
-                    return f"🤖 {ai_response} (Powered by Cohere)"
-                    
-    except Exception as e:
-        print(f"Cohere API error: {str(e)}")
-    
-    return None
 
 if __name__ == "__main__":
     import uvicorn
