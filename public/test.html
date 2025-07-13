@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Connection Test</title>
+</head>
+<body>
+    <h1>Frontend-Backend Connection Test</h1>
+    <button onclick="testBackend()">Test Backend Connection</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testBackend() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Testing backend connection...');
+                const response = await fetch('http://localhost:8001/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `✅ Success! Backend response: ${JSON.stringify(data)}`;
+                resultDiv.style.color = 'green';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.style.color = 'red';
+                console.error('Connection error:', error);
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = () => {
+            testBackend();
+        };
+    </script>
+</body>
+</html>

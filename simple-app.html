@@ -77,6 +77,14 @@
     .send-button:hover { background: #0056b3; }
     .send-button:disabled { background: #ccc; cursor: not-allowed; }
     .status { text-align: center; margin: 10px 0; color: #666; }
+    .footer { 
+      text-align: center; 
+      margin-top: 20px; 
+      padding: 10px; 
+      color: #888; 
+      font-size: 14px; 
+      border-top: 1px solid #eee; 
+    }
   </style>
 </head>
 <body>
@@ -97,6 +105,10 @@
         <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." disabled>
         <button class="send-button" id="sendButton" onclick="sendMessage()" disabled>Send</button>
       </div>
+    </div>
+    
+    <div class="footer">
+      Created by Pranav
     </div>
   </div>
 

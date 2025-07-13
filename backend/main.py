@@ -14,12 +14,17 @@ load_dotenv()
 # Deployment timestamp: 2025-07-13T01:00:00Z - Clean Azure-only implementation
 app = FastAPI(title="Genie AI Assistant API", version="1.0.0")
 
-# CORS middleware - Allow both localhost and Surge.sh domain
+# CORS middleware - Allow all localhost origins for development
 allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:4000", 
     "http://localhost:4200",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:4000",
+    "http://127.0.0.1:4200",
     "https://localhost:4200", 
     "https://zealous-feet.surge.sh",
-    os.getenv("FRONTEND_URL", "http://localhost:4200")
+    "*"  # Allow all origins for development
 ]
 
 app.add_middleware(
